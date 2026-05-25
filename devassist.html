@@ -1,0 +1,967 @@
+<!--skeleton-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevAssist - AI Coding Assistant</title>
+
+    <!--add google fonts--> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!--CSS design tokens (colors)-->
+    <style>
+        /*reset, make all browsers behave the same*/
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /*design tokens, all colors defined in one place*/
+        :root{
+        --bg: #0e1117;
+        --bg-2: #161b22;
+        --bg-3: #1c2330;
+        --border: #30363d;
+        --text: #e6edf3;
+        --text-muted: #8b949e;
+        --text-dim: #484f58;
+        --accent: #3fb950;
+        --blue: #58a6ff;
+        --red: #f85149;
+        --yellow: #d29922;
+        --radius: 8px;
+        --font-mono: 'JetBrains Mono', monospace;
+        --font-ui: 'Syne', sans-serif;
+        }
+        /*flex column so header + main stack vertically*/
+        body {
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--font-ui);
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;  
+        }
+        /*header: sticky bar at the top*/
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 56px;
+            background: var(--bg-2);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+        }
+        /*logo group-icon + name + AI label*/
+        .logo{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        /*Green icon box*/
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: #000;
+        }
+        .logo-text{ color: var(--text); }
+        /*small AI label*/
+        .logo-sub{
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        /*demo mode green badge*/
+        .demo-pill{
+            background: #1a3a22;
+            border: 1px solid var(--accent);
+            border-radius: 5px;
+            color: var(--accent);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+        }
+
+        /* main — two equal columns side by side, fills remaining screen height */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      height: calc(100vh - 56px);
+    }
+
+    /* LEFT panel — stacks header, editor, question bar vertically */
+    .panel-left {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* Shared top bar for both panels */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+    }
+
+    .lang-select {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Code editor — flex:1 means it fills all remaining space */
+    #code-input {
+      flex: 1;
+      background: #0d1117;
+      border: none;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      padding: 16px;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+    }
+
+    #code-input::placeholder { color: var(--text-dim); }
+
+    /* Question bar — pinned to the bottom of the left panel */
+    .question-area {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+
+    .question-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+
+    #question-input {
+      flex: 1;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 10px 14px;
+      resize: none;
+      outline: none;
+      min-height: 44px;
+      max-height: 120px;
+    }
+
+    #question-input::placeholder { color: var(--text-dim); }
+
+    #submit-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 18px;
+      height: 44px;
+      white-space: nowrap;
+    }
+
+    #submit-btn:hover { background: #56d364; }
+    #submit-btn:disabled { background: var(--text-dim); cursor: not-allowed; }
+
+    /* RIGHT panel */
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 4px 10px;
+      font-family: var(--font-ui);
+    }
+
+    .clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+    #response-container {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    /* Empty state — centered before any messages */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 14px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .empty-icon { font-size: 36px; font-family: var(--font-mono); color: var(--accent); opacity: 0.4; }
+    .empty-title { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+    .empty-hint  { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 260px; }
+
+    .example-chips { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 280px; }
+
+    .chip {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 8px 12px;
+      text-align: left;
+      font-family: var(--font-ui);
+    }
+
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Stats bar — very bottom of right panel */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-2);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .stat { display: flex; align-items: center; gap: 4px; }
+    .stat span { color: var(--text-muted); }
+
+    /* Each message bubble — user question or AI reply */
+    .message {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* Fade in from slightly below when a message appears */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* User message — slightly lighter background */
+    .message.user { background: var(--bg-2); }
+
+    /* AI reply — default dark background */
+    .message.assistant { background: var(--bg); }
+
+    /* Row with "You" / "DevAssist" label + timestamp */
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .message-role {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* "You" label in blue */
+    .message.user .message-role { color: var(--blue); }
+
+    /* "DevAssist" label in green */
+    .message.assistant .message-role { color: var(--accent); }
+
+    /* Timestamp on the far right */
+    .message-time {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-left: auto;
+      font-family: var(--font-mono);
+    }
+
+    /* The user's question text */
+    .user-question {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* AI response text */
+    .response-content {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text);
+    }
+
+    .response-content p { margin-bottom: 12px; }
+    .response-content p:last-child { margin-bottom: 0; }
+
+    /* Inline code: `like this` — yellow text in a dark box */
+    .response-content code {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      color: var(--yellow);
+    }
+
+     /* Multi-line code block wrapper */
+     .response-content pre {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+
+    /* Header bar inside code block: language name + copy button */
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+
+    .code-block-lang {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 10px;
+      padding: 2px 8px;
+      font-family: var(--font-ui);
+    }
+
+    .copy-btn:hover { color: var(--text); }
+
+    /* Code text inside the block */
+    .response-content pre code {
+      background: none;
+      border: none;
+      padding: 12px 16px;
+      display: block;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .response-content ul { padding-left: 20px; margin-bottom: 12px; }
+    .response-content li { margin-bottom: 4px; }
+    .response-content strong { font-weight: 600; }
+    .response-content h2 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; }
+    .response-content h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin: 12px 0 6px; }
+
+    /* Blinking cursor shown while AI is typing */
+    .typing-cursor::after {
+      content: '▋';
+      color: var(--accent);
+      animation: blink 0.8s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* Upload button — styled like a button but is actually a label */
+    .upload-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 9px;
+      transition: all 0.15s;
+    }
+
+    .upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Hide the real file input — we use the label above instead */
+    #file-input { display: none; }
+
+    /* Small green badge showing the uploaded filename */
+    .file-badge {
+      background: #1a3a22;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Export button */
+    .export-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 9px;
+      transition: all 0.15s;
+    }
+
+    .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .line-counter {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    .token-est {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    /* Turns yellow when getting long */
+    .token-est.warn { color: var(--yellow); border-color: var(--yellow); }
+
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      padding: 4px 10px;
+      transition: all 0.15s;
+    }
+
+    .theme-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* Light mode — overrides the dark CSS variables */
+    body.light {
+      --bg: #ffffff;
+      --bg-2: #f6f8fa;
+      --bg-3: #eaeef2;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --text-dim: #9198a1;
+    }
+
+    </style>
+    <!--dark page in browser-->
+</head> 
+
+<body>
+
+    <header>
+      <div class="logo">
+        <div class="logo-icon">&gt;_</div>
+        <span class="logo-text">DevAssist</span>
+        <span class="logo-sub">AI</span>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀ Light</button>
+      <div class="demo-pill">Demo Mode</div>
+    </header>
+  
+    <main>
+  
+      <!-- LEFT PANEL -->
+      <div class="panel-left">
+  
+        <div class="panel-header">
+            <span class="panel-label">Code Editor</span>
+            <span class="line-counter" id="line-counter">1 line</span>
+            <span class="token-est" id="token-est">~0 tokens</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label class="upload-btn" for="file-input">↑ Upload file</label>
+              <input type="file" id="file-input" accept=".py,.js,.ts,.java,.go,.sql">
+              <div id="file-badge"></div>
+              <select class="lang-select" id="lang-select">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="java">Java</option>
+                <option value="c++">C++</option>
+                <option value="go">Go</option>
+                <option value="sql">SQL</option>
+              </select>
+            </div>
+          </div>
+  
+        <textarea id="code-input" spellcheck="false"
+          placeholder="# Paste your code here..."></textarea>
+  
+        <div class="question-area">
+          <div class="question-row">
+            <textarea id="question-input" rows="1"
+              placeholder="Ask anything about your code..."></textarea>
+            <button id="submit-btn">Ask ↗</button>
+          </div>
+        </div>
+  
+      </div>
+  
+      <!-- RIGHT PANEL -->
+      <div class="panel-right">
+
+        <div class="panel-header">
+            <span class="panel-label">Response</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button class="export-btn" onclick="copyLastResponse()">⧉ Copy</button>
+              <button class="export-btn" onclick="exportAnswer()">↓ Export</button>
+              <button class="clear-btn" onclick="clearHistory()">Clear</button>
+            </div>
+          </div>
+  
+        <div id="response-container">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">{  }</div>
+            <div class="empty-title">Ready to help with your code</div>
+            <div class="empty-hint">Paste code on the left, ask a question.</div>
+            <div class="example-chips">
+              <button class="chip" onclick="useExample('Find any bugs or issues in this code.')">Find bugs or issues</button>
+              <button class="chip" onclick="useExample('Explain what this code does, step by step.')">Explain what this code does</button>
+              <button class="chip" onclick="useExample('How can I optimize this for better performance?')">Optimize for performance</button>
+            </div>
+          </div>
+        </div>
+  
+        <div class="stats-bar">
+          <div class="stat">Queries: <span id="stat-queries">0</span></div>
+          <div class="stat">Time: <span id="stat-time">—</span></div>
+        </div>
+  
+      </div>
+  
+    </main>
+
+    <script>
+        // ── STATE ──
+        // Variables that track what's happening in the app
+        let queryCount  = 0;   // how many questions asked this session
+        let convHistory = [];  // full conversation stored here
+
+        // ── DOM REFERENCES ──
+        // Find each element once and store it — faster than searching every time
+        const codeInput         = document.getElementById('code-input');
+        const questionInput     = document.getElementById('question-input');
+        const submitBtn         = document.getElementById('submit-btn');
+        const responseContainer = document.getElementById('response-container');
+        const emptyState        = document.getElementById('empty-state');
+
+        // ── DEMO RESPONSES ──
+        // Pre-written answers that match our four buggy functions
+        const DEMO = {
+        bug: `## Bugs Found — 4 Issues\n\n### 🔴 Bug #1 — Off-by-one in find_duplicates\n\`\`\`python\n# Wrong — skips the last element\nfor i in range(len(arr) - 1):\n\n# Fixed\nfor i in range(len(arr)):\n\`\`\`\nThe loop never checks the last index position.\n\n### 🔴 Bug #2 — Mutable default in process_batch\n\`\`\`python\n# Wrong — this list is shared across every call\ndef process_batch(data, results=[]):\n\n# Fixed\ndef process_batch(data, results=None):\n    if results is None:\n        results = []\n\`\`\`\nPython creates the default list once — it keeps growing with every call.\n\n### 🔴 Bug #3 — ZeroDivisionError in calculate_average\n\`\`\`python\n# Wrong — crashes if numbers is empty\naverage = total / len(numbers)\n\n# Fixed\nif not numbers:\n    return 0\naverage = total / len(numbers)\n\`\`\`\n\n### 🔴 Bug #4 — Early return in search_user\n\`\`\`python\n# Wrong — return None is inside the loop\nfor i in range(len(users)):\n    if users[i]["id"] == target_id:\n        return users[i]\n    return None  # exits after checking only the first user\n\n# Fixed — move return None outside the loop\nfor i in range(len(users)):\n    if users[i]["id"] == target_id:\n        return users[i]\nreturn None\n\`\`\``,
+
+        explain: `## What These Functions Do\n\n**find_duplicates(arr)**\nScans a list and returns any values that appear more than once. Uses two nested loops to compare every pair of items — like checking every combination of two cards in a deck to find matches.\n\n**process_batch(data)**\nFilters out non-positive numbers and doubles the rest. Like a conveyor belt — only items passing the check move forward, and each gets doubled. Has a hidden bug in the default argument.\n\n**calculate_average(numbers)**\nAdds all numbers together and divides by how many there are. Simple — but crashes if you pass an empty list because dividing by zero is undefined.\n\n**search_user(users, target_id)**\nLooks through a list of user objects for one matching a given ID. Returns the user if found, None if not. Has an indentation bug that makes it stop after checking only the first user.`,
+
+        optimize: `## Performance Improvements\n\n### find_duplicates — O(n²) → O(n)\n\`\`\`python\n# Before — nested loop, slow\ndef find_duplicates(arr):\n    duplicates = []\n    for i in range(len(arr) - 1):\n        for j in range(i + 1, len(arr)):\n            if arr[i] == arr[j]:\n                duplicates.append(arr[i])\n    return duplicates\n\n# After — one pass with Counter\nfrom collections import Counter\ndef find_duplicates(arr):\n    return [k for k, v in Counter(arr).items() if v > 1]\n\`\`\`\nAround 100x faster on large lists.\n\n### calculate_average — use built-in sum()\n\`\`\`python\n# Before — manual loop\ntotal = 0\nfor n in numbers:\n    total += n\nreturn total / len(numbers)\n\n# After — built-in runs in C, much faster\ndef calculate_average(numbers):\n    if not numbers:\n        return 0\n    return sum(numbers) / len(numbers)\n\`\`\`\n\n### search_user — one-liner with next()\n\`\`\`python\ndef search_user(users, target_id):\n    return next((u for u in users if u["id"] == target_id), None)\n\`\`\``
+        };
+
+        // Pick a response based on keywords in the question
+        function getDemoResponse(question) {
+        const q = question.toLowerCase();
+        if (q.includes('bug') || q.includes('issue') || q.includes('find') || q.includes('wrong'))
+            return DEMO.bug;
+        if (q.includes('explain') || q.includes('what') || q.includes('how'))
+            return DEMO.explain;
+        if (q.includes('optim') || q.includes('faster') || q.includes('performance'))
+            return DEMO.optimize;
+        return DEMO.explain; // default fallback
+        }
+
+        // ── SECURITY ──
+        // Always escape user text before putting it in the page
+        // Prevents malicious code from running
+        function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        // ── MARKDOWN RENDERER ──
+        // The AI responds in markdown — this converts it to HTML
+        // so the browser displays it with formatting
+        function renderMarkdown(text) {
+        let html = escapeHtml(text);
+
+        // Code blocks: ```python ... ```
+        html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+            const l = lang || 'code';
+            return `<pre><div class="code-block-header">
+            <span class="code-block-lang">${l}</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div><code>${code.trim()}</code></pre>`;
+        });
+
+        // Inline code: `word`
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        // Bold: **word**
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+        // Headings: ### and ##
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm,  '<h2>$1</h2>');
+
+        // List items: - item
+        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+
+        // Wrap plain text lines in <p> tags
+        // Skip lines that are already HTML
+        let result = '';
+        let inPre = false;
+        for (const line of html.split('\n')) {
+            if (line.startsWith('<pre>')) inPre = true;
+            if (line.includes('</pre>')) inPre = false;
+            if (!inPre && line.trim() && !line.match(/^<(h[23]|ul|li|pre|\/)/)) {
+            result += `<p>${line}</p>`;
+            } else {
+            result += line + '\n';
+            }
+        }
+        return result;
+        }
+
+        // Copy a code block to clipboard when user clicks "copy"
+        function copyCode(btn) {
+        const code = btn.closest('pre').querySelector('code').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            btn.textContent = 'copied!';
+            setTimeout(() => btn.textContent = 'copy', 1500);
+            });
+        }
+
+        // ── STREAMING SIMULATOR ──
+        // Types the response out character by character
+        // This mimics what real API streaming looks like
+        async function streamText(text, div) {
+        let current = '';
+        for (const char of text) {
+            current += char;
+            div.innerHTML = renderMarkdown(current);
+            responseContainer.scrollTop = responseContainer.scrollHeight;
+            // Small random delay — makes it feel natural
+            await new Promise(r => setTimeout(r, char === '\n' ? 8 : Math.random() * 7 + 3));
+            }
+        }
+
+        // ── UI HELPERS ──
+
+        // Fill the question box when user clicks an example chip
+        function useExample(text) {
+        questionInput.value = text;
+        questionInput.style.height = 'auto';
+        questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+        questionInput.focus();
+        }
+
+        // Clear all messages and reset stats
+        function clearHistory() {
+        convHistory = [];
+        responseContainer.innerHTML = '';
+        emptyState.style.display = '';
+        responseContainer.appendChild(emptyState);
+        document.getElementById('stat-queries').textContent = '0';
+        document.getElementById('stat-time').textContent = '—';
+        }
+
+        // Get current time as HH:MM
+        function getTime() {
+        return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ── FILE UPLOAD ──
+    // Reads a local file and puts the content into the code editor
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        // Put file content into the code editor
+        codeInput.value = ev.target.result;
+
+        // Auto-detect language from file extension
+        const ext = file.name.split('.').pop().toLowerCase();
+        const extMap = {
+          py: 'python', js: 'javascript', ts: 'typescript',
+          java: 'java', go: 'go', sql: 'sql'
+        };
+        const langSelect = document.getElementById('lang-select');
+        if (extMap[ext]) langSelect.value = extMap[ext];
+
+        // Show the filename as a badge
+        const badge = document.getElementById('file-badge');
+        badge.textContent = file.name;
+        badge.className = 'file-badge';
+      };
+
+      reader.readAsText(file);
+      e.target.value = ''; // reset so same file can be re-uploaded
+    });
+
+    // ── EXPORT ──
+    // Downloads the full conversation as a markdown file
+    function exportAnswer() {
+      if (convHistory.length === 0) {
+        alert('Nothing to export yet — ask a question first.');
+        return;
+      }
+
+      // Build the markdown content
+      const lines = [
+        '# DevAssist — Conversation Export',
+        `_Exported: ${new Date().toLocaleString()}_`,
+        '',
+        '---',
+        ''
+      ];
+
+      convHistory.forEach(msg => {
+        const role = msg.role === 'user' ? '## You' : '## DevAssist';
+        lines.push(role, '', msg.content, '', '---', '');
+      });
+
+      // Create a downloadable file and trigger download
+      const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `devassist-export-${Date.now()}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+        // ── EVENT LISTENERS ──
+
+        // Auto-expand the question textarea as user types
+        questionInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        questionInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+            }
+            });
+
+        // Ctrl+Enter or Cmd+Enter anywhere on the page also submits
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit();
+            }
+        });
+
+        // Ask button click
+        submitBtn.addEventListener('click', handleSubmit);
+
+        // ── MAIN SUBMIT HANDLER ──
+        // Runs every time the user clicks Ask or presses Enter
+        async function handleSubmit() {
+        const code     = codeInput.value.trim();
+        const question = questionInput.value.trim();
+
+        // Do nothing if question is empty
+        if (!question) { questionInput.focus(); return; }
+
+        const lang      = document.getElementById('lang-select').value;
+        const timestamp = getTime();
+
+        // Hide the empty state on the first message
+        emptyState.style.display = 'none';
+
+        // ── Add user message to the page ──
+        const userMsg = document.createElement('div');
+        userMsg.className = 'message user';
+        userMsg.innerHTML = `
+            <div class="message-meta">
+            <span class="message-role">You</span>
+            <span class="message-time">${timestamp}</span>
+            </div>
+            <div class="user-question">${escapeHtml(question)}</div>`;
+        responseContainer.appendChild(userMsg);
+
+        // ── Add assistant placeholder ──
+        // responseDiv will fill in as the response streams
+        const assistantMsg = document.createElement('div');
+        assistantMsg.className = 'message assistant';
+        const responseDiv = document.createElement('div');
+        responseDiv.className = 'response-content typing-cursor';
+        assistantMsg.innerHTML = `
+            <div class="message-meta">
+            <span class="message-role">DevAssist</span>
+            <span class="message-time">${timestamp}</span>
+            </div>`;
+        assistantMsg.appendChild(responseDiv);
+        responseContainer.appendChild(assistantMsg);
+
+        // Disable button while response streams
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+        questionInput.value = '';
+        questionInput.style.height = 'auto';
+        responseContainer.scrollTop = responseContainer.scrollHeight;
+
+        const startTime = Date.now();
+
+        // Build the full message with code context if code was pasted
+        const userContent = code
+            ? `Here is my ${lang} code:\n\`\`\`${lang}\n${code}\n\`\`\`\n\n${question}`
+            : question;
+
+        convHistory.push({ role: 'user', content: userContent });
+
+        // Get the right demo response and stream it
+        const mockText = getDemoResponse(question);
+        await streamText(mockText, responseDiv);
+
+        // Remove blinking cursor, do final clean render
+        responseDiv.classList.remove('typing-cursor');
+        responseDiv.innerHTML = renderMarkdown(mockText);
+        convHistory.push({ role: 'assistant', content: mockText });
+
+        // Update stats
+        queryCount++;
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('stat-queries').textContent = queryCount;
+        document.getElementById('stat-time').textContent    = elapsed + 's';
+
+        // Re-enable input
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Ask ↗';
+        responseContainer.scrollTop = responseContainer.scrollHeight;
+        }
+        
+     // Update line counter whenever user types in the code editor
+        codeInput.addEventListener('input', () => {
+            const lines = codeInput.value.split('\n').length;
+            const counter = document.getElementById('line-counter');
+            counter.textContent = lines === 1 ? '1 line' : lines + ' lines';
+        });
+ 
+      codeInput.addEventListener('input', () => {
+      const lines = codeInput.value.split('\n').length;
+      const counter = document.getElementById('line-counter');
+      counter.textContent = lines === 1 ? '1 line' : lines + ' lines';
+
+      // Rough token estimate — 1 token ≈ 4 characters
+      const tokens = Math.floor(codeInput.value.length / 4);
+      const est = document.getElementById('token-est');
+      est.textContent = '~' + tokens.toLocaleString() + ' tokens';
+      // Warn if getting expensive
+      est.className = tokens > 1000 ? 'token-est warn' : 'token-est';
+    });
+
+    // Copy the last AI response to clipboard
+    function copyLastResponse() {
+    // Find all assistant messages and get the last one
+    const messages = convHistory.filter(m => m.role === 'assistant');
+    if (messages.length === 0) {
+        alert('No response to copy yet.');
+        return;
+    }
+    const lastReply = messages[messages.length - 1].content;
+    navigator.clipboard.writeText(lastReply).then(() => {
+        // Briefly change button text to confirm
+        const btn = document.querySelector('[onclick="copyLastResponse()"]');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = '⧉ Copy', 1500);
+    });
+    }
+
+    // Toggle between dark and light mode
+    function toggleTheme() {
+      const body = document.body;
+      const btn  = document.getElementById('theme-btn');
+      const isLight = body.classList.toggle('light');
+      btn.textContent = isLight ? '🌙 Dark' : '☀ Light';
+    }
+  
+    </script>
+  </body>
+</html>
