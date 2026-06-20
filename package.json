@@ -1,0 +1,121 @@
+{
+  "name": "devassist",
+  "displayName": "DevAssist",
+  "description": "AI-powered code assistant using Claude — explain, debug, and optimize code from your editor",
+  "version": "0.1.0",
+  "publisher": "devassist",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Machine Learning"],
+  "keywords": ["ai", "claude", "assistant", "debug", "explain"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "devassist.open",
+        "title": "DevAssist: Open Panel"
+      },
+      {
+        "command": "devassist.analyzeSelection",
+        "title": "DevAssist: Analyze Selection"
+      },
+      {
+        "command": "devassist.explainCode",
+        "title": "DevAssist: Explain Code"
+      },
+      {
+        "command": "devassist.findBugs",
+        "title": "DevAssist: Find Bugs"
+      },
+      {
+        "command": "devassist.optimizeCode",
+        "title": "DevAssist: Optimize Code"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "devassist.analyzeSelection",
+          "when": "editorHasSelection",
+          "group": "devassist@1"
+        },
+        {
+          "command": "devassist.explainCode",
+          "group": "devassist@2"
+        },
+        {
+          "command": "devassist.findBugs",
+          "group": "devassist@3"
+        },
+        {
+          "command": "devassist.optimizeCode",
+          "when": "editorHasSelection",
+          "group": "devassist@4"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DevAssist",
+      "properties": {
+        "devassist.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Anthropic API key (get one at console.anthropic.com)",
+          "markdownDescription": "Your Anthropic API key. Get one at [console.anthropic.com](https://console.anthropic.com)."
+        },
+        "devassist.model": {
+          "type": "string",
+          "default": "claude-sonnet-4-6",
+          "enum": [
+            "claude-haiku-4-5-20251001",
+            "claude-sonnet-4-6",
+            "claude-opus-4-8"
+          ],
+          "enumDescriptions": [
+            "Haiku 4.5 — fastest, most economical",
+            "Sonnet 4.6 — balanced speed and intelligence (recommended)",
+            "Opus 4.8 — most powerful"
+          ],
+          "description": "Claude model to use for responses"
+        },
+        "devassist.maxTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 256,
+          "maximum": 16000,
+          "description": "Maximum tokens in each response"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "devassist.open",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      },
+      {
+        "command": "devassist.analyzeSelection",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "compile": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}
